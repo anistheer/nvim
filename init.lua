@@ -16,6 +16,8 @@ vim.opt.scrolloff = 8          -- Keep 8 lines above/below cursor
 vim.opt.sidescrolloff = 8      -- Keep 8 characters left/right of cursor
 vim.opt.updatetime = 50        -- Faster completion
 vim.opt.signcolumn = "yes"     -- Always show the sign column
+vim.opt.fileformat = "unix"    -- Use LF line endings
+vim.opt.fileformats = "unix,dos" -- Prefer Unix line endings, fallback to DOS
 
 -- Better command line completion
 vim.opt.wildmenu = true        -- Enable wildmenu
@@ -408,11 +410,25 @@ require("lazy").setup({
   },
   { -- optional cmp completion source for require statements and module annotations
     "hrsh7th/nvim-cmp",
+    dependencies = {
+      "hrsh7th/cmp-cmdline",
+      "hrsh7th/cmp-path",
+    },
     opts = function(_, opts)
+      local cmp = require('cmp')
       opts.sources = opts.sources or {}
       table.insert(opts.sources, {
         name = "lazydev",
         group_index = 0, -- set group index to 0 to skip loading LuaLS completions
+      })
+
+      -- Setup cmdline completion
+      cmp.setup.cmdline(':', {
+        mapping = cmp.mapping.preset.cmdline(),
+        sources = cmp.config.sources({
+          { name = 'path' },
+          { name = 'cmdline' },
+        })
       })
     end,
   },
