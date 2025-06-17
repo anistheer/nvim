@@ -133,11 +133,27 @@ require("lazy").setup({
     dependencies = {
       "hrsh7th/nvim-cmp",
       "hrsh7th/cmp-nvim-lsp",
+      "hrsh7th/cmp-cmdline",
+      "hrsh7th/cmp-path",
       "L3MON4D3/LuaSnip",
       "saadparwaiz1/cmp_luasnip",
       "rafamadriz/friendly-snippets",
+      "williamboman/mason.nvim",
+      "williamboman/mason-lspconfig.nvim",
     },
     config = function()
+      -- Setup Mason
+      require("mason").setup()
+      require("mason-lspconfig").setup({
+        ensure_installed = { 
+          "lua_ls",
+          "ts_ls",
+          "eslint"
+        },
+        automatic_installation = true,
+        automatic_enable = true
+      })
+
       -- Setup nvim-cmp
       local cmp = require('cmp')
       local cmp_lsp = require('cmp_nvim_lsp')
@@ -158,15 +174,15 @@ require("lazy").setup({
           ['<S-Tab>'] = cmp.mapping.select_prev_item(),
         }),
         sources = cmp.config.sources({
-          { name = 'nvim_lsp' },
-          { name = 'luasnip' },
-          { name = 'buffer' },
-          { name = 'path' },
-          { name = 'cmdline' },
+          { name = 'nvim_lsp', priority = 1000 },  -- Give LSP highest priority
+          { name = 'path', priority = 500 },       -- Path completions second
         }),
         formatting = {
           format = function(entry, vim_item)
-            vim_item.kind = string.format('%s %s', vim_item.kind, entry.source.name)
+            -- Show source name only for non-LSP sources
+            if entry.source.name ~= 'nvim_lsp' then
+              vim_item.kind = string.format('%s %s', vim_item.kind, entry.source.name)
+            end
             return vim_item
           end
         },
@@ -196,13 +212,65 @@ require("lazy").setup({
       local capabilities = cmp_lsp.default_capabilities()
       local lspconfig = require('lspconfig')
 
+      -- Lua LSP
+      lspconfig.lua_ls.setup({
+        capabilities = capabilities,
+        settings = {
+          Lua = {
+            runtime = {
+              version = 'LuaJIT',
+            },
+            diagnostics = {
+              globals = { 'vim' },
+            },
+            workspace = {
+              library = vim.api.nvim_get_runtime_file("", true),
+              checkThirdParty = false,
+            },
+            telemetry = {
+              enable = false,
+            },
+          },
+        },
+      })
+
       -- TypeScript/JavaScript LSP
       lspconfig.ts_ls.setup({
         capabilities = capabilities,
         on_attach = function(client, bufnr)
           -- Enable inlay hints
           client.server_capabilities.inlayHintProvider = true
+          
+          -- Format on save
+          vim.api.nvim_create_autocmd("BufWritePre", {
+            buffer = bufnr,
+            command = "EslintFixAll",
+          })
         end,
+        settings = {
+          typescript = {
+            inlayHints = {
+              includeInlayParameterNameHints = "all",
+              includeInlayParameterNameHintsWhenArgumentMatchesName = false,
+              includeInlayFunctionParameterTypeHints = true,
+              includeInlayVariableTypeHints = true,
+              includeInlayPropertyDeclarationTypeHints = true,
+              includeInlayFunctionLikeReturnTypeHints = true,
+              includeInlayEnumMemberValueHints = true,
+            },
+          },
+          javascript = {
+            inlayHints = {
+              includeInlayParameterNameHints = "all",
+              includeInlayParameterNameHintsWhenArgumentMatchesName = false,
+              includeInlayFunctionParameterTypeHints = true,
+              includeInlayVariableTypeHints = true,
+              includeInlayPropertyDeclarationTypeHints = true,
+              includeInlayFunctionLikeReturnTypeHints = true,
+              includeInlayEnumMemberValueHints = true,
+            },
+          },
+        },
       })
 
       -- ESLint LSP
@@ -226,6 +294,21 @@ require("lazy").setup({
       vim.keymap.set('n', '<leader>f', function()
         vim.lsp.buf.format({ async = true })
       end, { buffer = 0 })
+
+      -- Diagnostic keybindings
+      vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Previous diagnostic' })
+      vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Next diagnostic' })
+      vim.keymap.set('n', '<leader>d', vim.diagnostic.open_float, { desc = 'Show diagnostic' })
+      vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Show diagnostics list' })
+
+      -- Configure diagnostic display
+      vim.diagnostic.config({
+        virtual_text = true,  -- Show inline errors
+        signs = true,         -- Show signs in the sign column
+        underline = true,     -- Underline the error
+        update_in_insert = false,  -- Don't update diagnostics while in insert mode
+        severity_sort = true, -- Sort diagnostics by severity
+      })
     end,
   },
 
@@ -408,46 +491,4 @@ require("lazy").setup({
       },
     },
   },
-  { -- optional cmp completion source for require statements and module annotations
-    "hrsh7th/nvim-cmp",
-    dependencies = {
-      "hrsh7th/cmp-cmdline",
-      "hrsh7th/cmp-path",
-    },
-    opts = function(_, opts)
-      local cmp = require('cmp')
-      opts.sources = opts.sources or {}
-      table.insert(opts.sources, {
-        name = "lazydev",
-        group_index = 0, -- set group index to 0 to skip loading LuaLS completions
-      })
-
-      -- Setup cmdline completion
-      cmp.setup.cmdline(':', {
-        mapping = cmp.mapping.preset.cmdline(),
-        sources = cmp.config.sources({
-          { name = 'path' },
-          { name = 'cmdline' },
-        })
-      })
-    end,
-  },
-  { -- optional blink completion source for require statements and module annotations
-    "saghen/blink.cmp",
-    version = '1.*',
-    opts = {
-      sources = {
-        -- add lazydev to your completion providers
-        default = { "lazydev", "lsp", "path", "snippets", "buffer" },
-        providers = {
-          lazydev = {
-            name = "LazyDev",
-            module = "lazydev.integrations.blink",
-            -- make lazydev completions top priority (see `:h blink.cmp`)
-            score_offset = 100,
-          },
-        },
-      },
-    },
-  }
 }) 
