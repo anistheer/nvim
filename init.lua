@@ -416,6 +416,10 @@ require('lazy').setup({
 
       keymap = {
         preset = 'default',
+        ['<Up>'] = { 'select_prev', 'fallback' },
+        ['<Down>'] = { 'select_next', 'fallback' },
+        ['<Tab>'] = { 'accept', 'fallback' },
+        ['<Enter>'] = { 'accept', 'fallback' },
       },
 
       appearance = {
@@ -424,6 +428,11 @@ require('lazy').setup({
 
       completion = {
         documentation = { auto_show = false, auto_show_delay_ms = 500 },
+      },
+
+      cmdline = {
+        keymap = { preset = 'default' },
+        completion = { menu = { auto_show = true } },
       },
 
       sources = {
