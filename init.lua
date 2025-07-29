@@ -10,10 +10,6 @@ vim.o.mouse = 'a'
 
 vim.o.showmode = false
 
-vim.schedule(function()
-  vim.o.clipboard = 'unnamedplus'
-end)
-
 vim.o.breakindent = true
 
 vim.o.undofile = true
@@ -50,6 +46,7 @@ vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower win
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
 vim.keymap.set('n', '<A-UP>', '<cmd>:m -2<CR>', { desc = 'Move line(s) up' })
 vim.keymap.set('n', '<A-DOWN>', '<cmd>:m +1<CR>', { desc = 'Move line(s) down' })
+vim.keymap.set('v', '<C-Insert>', '"+y', { noremap = true, silent = true })
 
 vim.api.nvim_create_autocmd('TextYankPost', {
   desc = 'Highlight when yanking (copying) text',
