@@ -319,38 +319,67 @@ require('lazy').setup({
           end,
         },
       }
-
       local capabilities = require('blink.cmp').get_lsp_capabilities()
 
       local servers = {
         lua_ls = {
           settings = {
             Lua = {
-              completion = {
-                callSnippet = 'Replace',
-              },
+              completion = { callSnippet = 'Replace' },
             },
           },
         },
-        ts_ls = {},
-      }
-      local ensure_installed = vim.tbl_keys(servers or {})
-      vim.list_extend(ensure_installed, {
-        'stylua', -- Used to format Lua code
-      })
-      require('mason-tool-installer').setup { ensure_installed = ensure_installed }
-
-      require('mason-lspconfig').setup {
-        ensure_installed = {}, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
-        automatic_installation = false,
-        handlers = {
-          function(server_name)
-            local server = servers[server_name] or {}
-            server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
-            require('lspconfig')[server_name].setup(server)
+        clangd = {},
+        ts_ls = {
+          on_attach = function(_, bufnr)
+            local opts = { buffer = bufnr }
+            -- gf/gd через LSP
+            vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
+            vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, opts)
+            vim.keymap.set('n', 'gf', vim.lsp.buf.definition, opts)
           end,
+          root_dir = require('lspconfig').util.root_pattern('tsconfig.json', 'package.json', '.git'),
+          init_options = {
+            preferences = {
+              importModuleSpecifierPreference = 'relative',
+              importModuleSpecifierEnding = 'minimal',
+            },
+          },
         },
       }
+
+      local ensure_installed = vim.tbl_keys(servers)
+      vim.list_extend(ensure_installed, { 'stylua' })
+
+      require('mason-tool-installer').setup { ensure_installed = ensure_installed }
+
+      require('mason').setup()
+      local mlsp = require 'mason-lspconfig'
+      mlsp.setup {
+        ensure_installed = {},
+        automatic_installation = false,
+        automatic_enable = {
+          exclude = vim.tbl_keys(servers),
+        },
+      }
+
+      for name, cfg in pairs(servers) do
+        local base = {
+          on_attach = cfg.on_attach,
+          capabilities = vim.tbl_deep_extend('force', {}, capabilities, cfg.capabilities or {}),
+          root_dir = cfg.root_dir,
+          init_options = cfg.init_options,
+          settings = cfg.settings,
+        }
+
+        local opts = vim.tbl_deep_extend('force', base, cfg)
+
+        if require('lspconfig')[name] then
+          require('lspconfig')[name].setup(opts)
+        else
+          vim.notify('lspconfig: server not found in lspconfig: ' .. name, vim.log.levels.WARN)
+        end
+      end
     end,
   },
 
@@ -446,16 +475,11 @@ require('lazy').setup({
   },
 
   {
-    'folke/tokyonight.nvim',
+    'rose-pine/neovim',
+    name = 'rose-pine',
     priority = 1000, -- Make sure to load this before all the other start plugins.
     config = function()
-      ---@diagnostic disable-next-line: missing-fields
-      require('tokyonight').setup {
-        styles = {
-          comments = { italic = false }, -- Disable italics in comments
-        },
-      }
-      vim.cmd.colorscheme 'tokyonight-night'
+      vim.cmd 'colorscheme rose-pine'
     end,
   },
 
@@ -579,7 +603,11 @@ require('lazy').setup({
 
   {
     'stevearc/oil.nvim',
-    opts = {},
+    opts = {
+      view_options = {
+        show_hidden = true,
+      },
+    },
     dependencies = { 'nvim-tree/nvim-web-devicons' },
   },
 
