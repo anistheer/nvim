@@ -611,14 +611,15 @@ require('lazy').setup({
     dependencies = { 'nvim-tree/nvim-web-devicons' },
   },
 
+  'tpope/vim-fugitive',
+
   {
     'mbbill/undotree',
     config = function()
+      vim.g.undotree_DiffCommand = 'FC'
       vim.keymap.set('n', '<leader><F5>', vim.cmd.UndotreeToggle)
     end,
   },
-
-  'tpope/vim-fugitive',
 }, {
   ui = {
     icons = vim.g.have_nerd_font and {} or {
