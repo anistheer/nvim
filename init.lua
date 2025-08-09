@@ -611,8 +611,20 @@ require('lazy').setup({
     dependencies = { 'nvim-tree/nvim-web-devicons' },
   },
 
-  'tpope/vim-fugitive',
-
+  {
+    'tpope/vim-fugitive',
+    config = function()
+      vim.api.nvim_create_autocmd('BufWinEnter', {
+        pattern = 'fugitive://*',
+        callback = function()
+          if vim.bo.filetype == 'fugitive' then
+            vim.cmd 'wincmd L' -- move split to the far right
+            vim.cmd 'vertical resize 80'
+          end
+        end,
+      })
+    end,
+  },
   {
     'mbbill/undotree',
     config = function()
@@ -620,6 +632,7 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader><F5>', vim.cmd.UndotreeToggle)
     end,
   },
+  'sindrets/diffview.nvim',
 }, {
   ui = {
     icons = vim.g.have_nerd_font and {} or {
