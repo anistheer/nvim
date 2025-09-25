@@ -669,6 +669,7 @@ require('lazy').setup({
     end,
   },
   'sindrets/diffview.nvim',
+  { 'nvim-mini/mini.ai', version = false },
 }, {
   ui = {
     icons = vim.g.have_nerd_font and {} or {
