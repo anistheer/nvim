@@ -385,7 +385,6 @@ require('lazy').setup({
       }
 
       local ensure_installed = vim.tbl_keys(servers)
-      vim.list_extend(ensure_installed, { 'stylua' })
 
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -403,10 +402,13 @@ require('lazy').setup({
         local base = {
           on_attach = cfg.on_attach,
           capabilities = vim.tbl_deep_extend('force', {}, capabilities, cfg.capabilities or {}),
-          root_dir = cfg.root_dir,
           init_options = cfg.init_options,
           settings = cfg.settings,
         }
+
+        if cfg.root_dir then
+          base.root_dir = cfg.root_dir
+        end
 
         local opts = vim.tbl_deep_extend('force', base, cfg)
 
@@ -447,7 +449,7 @@ require('lazy').setup({
         end
       end,
       formatters_by_ft = {
-        lua = { 'stylua' },
+        lua = { 'lua_ls' },
         json = { 'prettier' },
       },
     },
@@ -669,7 +671,7 @@ require('lazy').setup({
     end,
   },
   'sindrets/diffview.nvim',
-  { 'nvim-mini/mini.ai', version = false },
+  { 'nvim-mini/mini.ai',        version = false },
 }, {
   ui = {
     icons = vim.g.have_nerd_font and {} or {
